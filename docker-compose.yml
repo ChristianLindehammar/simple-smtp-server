@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  smtp:
+    build: .
+    ports:
+      - "2525:2525"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    # Add healthcheck to ensure service is running
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2525"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
