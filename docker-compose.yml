@@ -1,16 +1,23 @@
 version: '3'
 
 services:
-  smtp:
+  smtp-server:
     build: .
     ports:
-      - "2525:2525"
+      - "0.0.0.0:2525:2525"   # SMTP port
+      - "0.0.0.0:8025:8025"   # API port
+      - "0.0.0.0:8000:8000"   # Web interface port
     environment:
-      - PYTHONUNBUFFERED=1
+      - API_KEY=your-secure-api-key-here
+      # Use service name for internal communication
+      - API_HOST=smtp-server
+    volumes:
+      - ./data:/app/data
     restart: unless-stopped
-    # Add healthcheck to ensure service is running
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "2525"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # Add hostname for easier reference
+    hostname: smtp-server
+    # Optional: use host network for maximum accessibility
+    # network_mode: "host"
+
+volumes:
+  data:

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temporary Email Service</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .email-address {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+        }
+        #inbox {
+            margin-top: 30px;
+        }
+        .email-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .email-content {
+            display: none;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>Temporary Email Service</h1>
+    
+    <div class="container">
+        <h2>Your temporary email address:</h2>
+        <div class="email-address" id="email-address">Generating...</div>
+        <button id="generate-btn">Generate New Email</button>
+        <button id="refresh-btn">Refresh Inbox</button>
+    </div>
+    
+    <div class="container" id="inbox">
+        <h2>Inbox</h2>
+        <div id="emails-list">
+            <p>No emails yet. Wait for new messages or refresh your inbox.</p>
+        </div>
+    </div>
+
+    <script>
+        let currentEmail = '';
+        
+        // Generate a new email address
+        async function generateEmail() {
+            try {
+                const response = await fetch('/api/generate-email');
+                const data = await response.json();
+                currentEmail = data.email;
+                document.getElementById('email-address').textContent = currentEmail;
+                checkEmails();
+            } catch (error) {
+                console.error('Error generating email:', error);
+            }
+        }
+        
+        // Check for emails
+        async function checkEmails() {
+            if (!currentEmail) return;
+            
+            try {
+                const username = currentEmail.split('@')[0];
+                const response = await fetch('/api/check-emails', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username }),
+                });
+                
+                const data = await response.json();
+                displayEmails(data.emails);
+            } catch (error) {
+                console.error('Error checking emails:', error);
+            }
+        }
+        
+        // Display emails in the inbox
+        function displayEmails(emails) {
+            const emailsList = document.getElementById('emails-list');
+            
+            if (emails.length === 0) {
+                emailsList.innerHTML = '<p>No emails yet. Wait for new messages or refresh your inbox.</p>';
+                return;
+            }
+            
+            emailsList.innerHTML = '';
+            emails.forEach((email, index) => {
+                const emailDiv = document.createElement('div');
+                emailDiv.className = 'email-item';
+                
+                const header = document.createElement('div');
+                header.innerHTML = `
+                    <strong>From:</strong> ${email.from}<br>
+                    <strong>Subject:</strong> ${email.subject}<br>
+                    <strong>Date:</strong> ${email.date}<br>
+                `;
+                
+                const viewButton = document.createElement('button');
+                viewButton.textContent = 'View Email';
+                viewButton.onclick = () => toggleEmailContent(index);
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'email-content';
+                contentDiv.id = `email-content-${index}`;
+                contentDiv.innerHTML = email.body;
+                
+                emailDiv.appendChild(header);
+                emailDiv.appendChild(viewButton);
+                emailDiv.appendChild(contentDiv);
+                emailsList.appendChild(emailDiv);
+            });
+        }
+        
+        // Toggle showing email content
+        function toggleEmailContent(index) {
+            const contentDiv = document.getElementById(`email-content-${index}`);
+            contentDiv.style.display = contentDiv.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // Set up event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            generateEmail();
+            
+            document.getElementById('generate-btn').addEventListener('click', generateEmail);
+            document.getElementById('refresh-btn').addEventListener('click', checkEmails);
+            
+            // Auto refresh every 30 seconds
+            setInterval(checkEmails, 30000);
+        });
+    </script>
+</body>
+</html>

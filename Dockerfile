@@ -5,8 +5,16 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY smtp_server.py .
+# Create templates directory
+RUN mkdir -p templates
 
-EXPOSE 2525
+# Copy files - explicitly include templates
+COPY templates ./templates/
+COPY *.py *.sh ./
 
-CMD ["python", "smtp_server.py"]
+# Set proper permissions
+RUN chmod +x start.sh
+
+EXPOSE 2525 8025 8000
+
+CMD ["./start.sh"]
